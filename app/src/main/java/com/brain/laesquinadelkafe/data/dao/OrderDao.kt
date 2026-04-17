@@ -42,7 +42,7 @@ interface OrderDao {
     }
 
     @Transaction
-    @Query("SELECT * FROM orders WHERE clientName = :clientName AND isPaid = 0 LIMIT 1")
+    @Query("SELECT * FROM orders WHERE LOWER(clientName) = LOWER(:clientName) AND isPaid = 0 LIMIT 1")
     suspend fun getActiveOrderByName(clientName: String): OrderWithItems?
 
     @Transaction

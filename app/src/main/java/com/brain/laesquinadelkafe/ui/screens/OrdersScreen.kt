@@ -130,7 +130,7 @@ fun OrdersScreen(orderViewModel: OrderViewModel, productViewModel: ProductViewMo
                     scope.launch {
                         val allOrders = orderViewModel.pendingOrders.value + orderViewModel.debts.value
                         var nextNumber = 2
-                        val baseName = name.replace(Regex(" \\d+$"), "")
+                        val baseName = name.replace(Regex(" (?i)\\d+$"), "").trim()
                         
                         while (allOrders.any { it.order.clientName.equals(if (nextNumber == 1) baseName else "$baseName $nextNumber", ignoreCase = true) }) {
                             nextNumber++

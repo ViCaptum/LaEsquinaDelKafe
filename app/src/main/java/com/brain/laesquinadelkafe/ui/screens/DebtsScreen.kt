@@ -88,15 +88,31 @@ fun DebtsScreen(viewModel: OrderViewModel) {
                 }
             },
             confirmButton = {
-                Button(onClick = {
-                    val additionalPayment = amountText.replace(",", ".").toDoubleOrNull() ?: 0.0
-                    if (additionalPayment > 0) {
-                        val newPaidAmount = order.paidAmount + additionalPayment
-                        val isFullyPaid = newPaidAmount >= order.totalAmount
-                        viewModel.updatePayment(order.id, newPaidAmount, isFullyPaid)
-                        orderToPayPartially = null
-                    }
-                }) { Text("Confirmar") }
+                val remainingToPay = order.totalAmount - order.paidAmount
+                val currentInput = amountText.replace(",", ".").toDoubleOrNull() ?: 0.0
+                
+                Button(
+                    onClick = {
+                        if (currentInput > 0) {
+                            val actualPayment = if (currentInput > remainingToPay) remainingToPay else currentInput
+                            val newPaidAmount = order.paidAmount + actualPayment
+                            val orderWithItems = debts.find { it.order.id == order.id }
+                            val cups = orderWithItems?.items?.filter { !it.isToTakeAway }?.sumOf { it.quantity } ?: 0
+                            
+                            val isFullyPaid = newPaidAmount >= order.totalAmount && cups == 0
+                            
+                            viewModel.updatePayment(order.id, newPaidAmount, isFullyPaid)
+                            
+                            if (newPaidAmount >= order.totalAmount && cups > 0) {
+                                scope.launch {
+                                    snackbarHostState.showSnackbar("Monto pagado al 100%, pero faltan devolver $cups tazas")
+                                }
+                            }
+                            orderToPayPartially = null
+                        }
+                    },
+                    enabled = currentInput > 0 && remainingToPay > 0
+                ) { Text("Confirmar") }
             },
             dismissButton = {
                 TextButton(onClick = { orderToPayPartially = null }) { Text("Cancelar") }
