@@ -3,45 +3,80 @@ package com.brain.laesquinadelkafe
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.brain.laesquinadelkafe.data.database.AppDatabase
+import com.brain.laesquinadelkafe.data.repository.OrderRepository
+import com.brain.laesquinadelkafe.data.repository.ProductRepository
+import com.brain.laesquinadelkafe.ui.screens.*
 import com.brain.laesquinadelkafe.ui.theme.LaEsquinaDelKafeTheme
+import com.brain.laesquinadelkafe.viewmodel.OrderViewModel
+import com.brain.laesquinadelkafe.viewmodel.OrderViewModelFactory
+import com.brain.laesquinadelkafe.viewmodel.ProductViewModel
+import com.brain.laesquinadelkafe.viewmodel.ProductViewModelFactory
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContent {
+            val database = AppDatabase.getDatabase(this)
+            val orderRepository = OrderRepository(database.orderDao())
+            val productRepository = ProductRepository(database.productDao())
+            
+            val orderViewModel: OrderViewModel = viewModel(factory = OrderViewModelFactory(orderRepository))
+            val productViewModel: ProductViewModel = viewModel(factory = ProductViewModelFactory(productRepository))
+
             LaEsquinaDelKafeTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
+                val navController = rememberNavController()
+                var selectedItem by remember { mutableIntStateOf(0) }
+                val items = listOf("Chat", "Pedidos", "Deudas", "Historial", "Productos")
+                val icons = listOf(
+                    Icons.AutoMirrored.Filled.Chat,
+                    Icons.Default.ListAlt,
+                    Icons.Default.MoneyOff,
+                    Icons.Default.History,
+                    Icons.Default.Inventory
+                )
+
+                Scaffold(
+                    bottomBar = {
+                        NavigationBar {
+                            items.forEachIndexed { index, item ->
+                                NavigationBarItem(
+                                    icon = { Icon(icons[index], contentDescription = item) },
+                                    label = { Text(item) },
+                                    selected = selectedItem == index,
+                                    onClick = {
+                                        selectedItem = index
+                                        navController.navigate(item)
+                                    }
+                                )
+                            }
+                        }
+                    }
+                ) { innerPadding ->
+                    NavHost(
+                        navController = navController,
+                        startDestination = "Chat",
                         modifier = Modifier.padding(innerPadding)
-                    )
+                    ) {
+                        composable("Chat") { ChatScreen() }
+                        composable("Pedidos") { OrdersScreen(orderViewModel, productViewModel) }
+                        composable("Deudas") { DebtsScreen(orderViewModel) }
+                        composable("Historial") { HistoryScreen(orderViewModel) }
+                        composable("Productos") { ProductsScreen(productViewModel) }
+                    }
                 }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    LaEsquinaDelKafeTheme {
-        Greeting("Android")
     }
 }
