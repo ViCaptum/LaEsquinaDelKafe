@@ -14,15 +14,17 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.brain.laesquinadelkafe.agent.CafeteriaAgent
+import com.brain.laesquinadelkafe.agent.InventoryProvider
+import com.brain.laesquinadelkafe.agent.ModelManager
+import com.brain.laesquinadelkafe.agent.PromptBuilder
 import com.brain.laesquinadelkafe.data.database.AppDatabase
 import com.brain.laesquinadelkafe.data.repository.OrderRepository
 import com.brain.laesquinadelkafe.data.repository.ProductRepository
 import com.brain.laesquinadelkafe.ui.screens.*
 import com.brain.laesquinadelkafe.ui.theme.LaEsquinaDelKafeTheme
-import com.brain.laesquinadelkafe.viewmodel.OrderViewModel
-import com.brain.laesquinadelkafe.viewmodel.OrderViewModelFactory
-import com.brain.laesquinadelkafe.viewmodel.ProductViewModel
-import com.brain.laesquinadelkafe.viewmodel.ProductViewModelFactory
+import com.brain.laesquinadelkafe.viewmodel.*
+import androidx.compose.ui.platform.LocalContext
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,6 +36,15 @@ class MainActivity : ComponentActivity() {
             
             val orderViewModel: OrderViewModel = viewModel(factory = OrderViewModelFactory(orderRepository))
             val productViewModel: ProductViewModel = viewModel(factory = ProductViewModelFactory(productRepository))
+
+            // Inicialización del Agente de IA
+            val inventoryProvider = remember { InventoryProvider(productRepository) }
+            val promptBuilder = remember { PromptBuilder() }
+            val cafeteriaAgent = remember { CafeteriaAgent(productRepository, orderRepository, inventoryProvider, promptBuilder) }
+            val chatViewModel: ChatViewModel = viewModel(factory = ChatViewModelFactory(cafeteriaAgent))
+            
+            val context = LocalContext.current
+            val modelManager = remember { ModelManager(context) }
 
             LaEsquinaDelKafeTheme {
                 val navController = rememberNavController()
@@ -69,7 +80,9 @@ class MainActivity : ComponentActivity() {
                         startDestination = "Chat",
                         modifier = Modifier.padding(innerPadding)
                     ) {
-                        composable("Chat") { ChatScreen() }
+                        composable("Chat") { 
+                            ChatScreen(chatViewModel, modelManager) 
+                        }
                         composable("Pedidos") { OrdersScreen(orderViewModel, productViewModel) }
                         composable("Deudas") { DebtsScreen(orderViewModel) }
                         composable("Historial") { HistoryScreen(orderViewModel) }

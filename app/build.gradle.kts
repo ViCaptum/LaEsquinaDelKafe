@@ -53,11 +53,14 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.navigation:navigation-compose:2.8.4")
 
-    //nuevas dependencias
+    // Room
     val room_version = "2.8.4"
     implementation("androidx.room:room-runtime:$room_version")
     ksp("androidx.room:room-compiler:$room_version")
     implementation("androidx.room:room-ktx:${room_version}")
+
+    // MediaPipe LLM Inference
+    implementation("com.google.mediapipe:tasks-genai:0.10.33")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
